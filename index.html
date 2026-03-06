@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>🎁 스마트 사은품 카운터 Premium</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+    :root {
+        --emart-yellow: #FFB81C;
+        --emart-dark: #231F20;
+        /* 라이트 모드 변수 */
+        --bg: #e0e0e0;
+        --card-bg: #e0e0e0;
+        --shadow1: #bebebe;
+        --shadow2: #ffffff;
+        --text: #333;
+        --sub-text: #666;
+    }
+
+    /* 🌙 다크 모드 변수 정의 */
+    body.dark-mode {
+        --bg: #222222;
+        --card-bg: #222222;
+        --shadow1: #151515;
+        --shadow2: #2f2f2f;
+        --text: #eeeeee;
+        --sub-text: #aaaaaa;
+    }
+
+    body { 
+        font-family:'Noto Sans KR',sans-serif; 
+        background-color: var(--bg);
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+        margin:0; text-align:center; color:var(--text); padding-bottom: 50px; 
+        transition: background-color 0.3s, color 0.3s;
+    }
+    
+    h1 { margin:30px; font-size:28px; font-weight: 900; letter-spacing: -1px; }
+    
+    .day-nav { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-bottom:20px; padding:0 10px; }
+    .day-btn { padding:12px 20px; border-radius:20px; cursor:pointer; font-weight:bold; background:var(--card-bg); box-shadow:6px 6px 12px var(--shadow1),-6px -6px 12px var(--shadow2); border:none; color:var(--sub-text); transition:0.3s; }
+    .day-btn.active { background: var(--emart-yellow); color: var(--emart-dark); box-shadow: inset 4px 4px 8px rgba(0,0,0,0.15); }
+    
+    .dashboard { display:flex; justify-content:center; gap:15px; flex-wrap:wrap; padding:10px; }
+    .card { flex: 1 1 22%; max-width:280px; padding:25px; border-radius:30px; background:var(--card-bg); box-shadow:12px 12px 24px var(--shadow1),-12px -12px 24px var(--shadow2); cursor:pointer; transition:0.1s transform, background-color 0.3s, box-shadow 0.3s; user-select:none; position:relative; box-sizing:border-box; }
+    .card:active { transform:scale(0.96); box-shadow:inset 8px 8px 16px var(--shadow1),inset -8px -8px 16px var(--shadow2); }
+    
+    .icon { font-size:45px; margin-bottom:12px; filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.1)); }
+    .title { font-size:20px; font-weight:bold; color: var(--text); opacity: 0.8; }
+    
+    .count { 
+        font-size:42px; margin:15px; color:var(--emart-yellow); font-weight: 900; 
+        text-shadow: 0 0 10px rgba(255, 184, 28, 0.4);
+        background: rgba(0,0,0,0.03); padding: 5px; border-radius: 15px;
+        box-shadow: inset 2px 2px 5px var(--shadow1), inset -2px -2px 5px var(--shadow2);
+    }
+    
+    .status { font-size:16px; margin-bottom:20px; color:var(--sub-text); min-height:24px; font-weight: bold; letter-spacing: 1px; }
+    
+    .buttons { display:flex; gap:12px; }
+    .btn { flex:1; padding:14px; font-size:22px; border:none; border-radius:18px; cursor:pointer; background:var(--card-bg); box-shadow:4px 4px 8px var(--shadow1),-4px -4px 8px var(--shadow2); color:var(--text); font-weight: bold; transition: 0.3s; }
+    .btn:active { box-shadow:inset 3px 3px 6px var(--shadow1),inset -3px -3px 6px var(--shadow2); color: var(--emart-yellow); }
+    
+    input { padding:18px; font-size:16px; border:none; border-radius:25px; background:var(--card-bg); box-shadow:inset 6px 6px 12px var(--shadow1),inset -6px -6px 12px var(--shadow2); width:85%; max-width:400px; margin:25px 0; outline:none; text-align:center; font-weight: bold; color: var(--text); transition: 0.3s; }
+    
+    .tools { margin-bottom:35px; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+    .tool { padding:12px 20px; border:none; border-radius:15px; cursor:pointer; background:var(--card-bg); box-shadow:4px 4px 8px var(--shadow1),-4px -4px 8px var(--shadow2); font-size:13px; font-weight:bold; color:var(--sub-text); transition: 0.3s; }
+    
+    .chart-container { margin: 30px auto; width: 90%; max-width: 580px; padding: 30px; border-radius: 35px; background: var(--card-bg); box-shadow: 12px 12px 24px var(--shadow1), -12px -12px 24px var(--shadow2); transition: 0.3s; }
+    .chart-title { font-size: 17px; font-weight: bold; margin-bottom: 25px; color: var(--sub-text); }
+    .chart-bars { display: flex; align-items: flex-end; justify-content: space-between; height: 130px; border-bottom: 2px solid #555; padding-top: 10px; }
+    .bar-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; }
+    .bar { 
+        width: 70%; 
+        background: linear-gradient(to top, var(--emart-yellow) 0%, #ffd670 100%);
+        border-radius: 6px 6px 0 0; min-height: 2px; transition: height 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+    }
+    .bar-label { font-size: 10px; margin-top: 10px; color: var(--sub-text); font-weight: bold; }
+    .bar-val { font-size: 11px; font-weight: bold; margin-bottom: 5px; color: var(--text); }
+
+    #totals { margin:25px auto; width:90%; max-width:580px; padding:25px; border-radius:30px; font-size:18px; font-weight:bold; background:var(--emart-dark); color: var(--emart-yellow); box-shadow: 8px 8px 20px rgba(0,0,0,0.3); line-height: 1.6; }
+    .popup { position:absolute; top:-30px; left:50%; transform:translateX(-50%); background:var(--emart-yellow); color:var(--emart-dark); padding:8px 16px; border-radius:12px; font-size:14px; font-weight:bold; opacity:0; transition:0.3s; pointer-events:none; }
+    
+    @media (max-width:800px){ .card { flex:1 1 45%; } }
+</style>
+</head>
+<body>
+
+<h1>🎁 사은품 배포 리포트</h1>
+
+<div class="day-nav">
+    <button class="day-btn active" onclick="setDay('day1',this)">Day 1</button>
+    <button class="day-btn" onclick="setDay('day2',this)">Day 2</button>
+    <button class="day-btn" onclick="setDay('day3',this)">Day 3</button>
+    <button class="day-btn" onclick="setDay('day4',this)">Day 4</button>
+</div>
+
+<div class="dashboard" id="dashboard"></div>
+
+<input id="barcodeInput" placeholder="바코드(1~4) 입력 후 Enter" autofocus>
+
+<div class="tools">
+    <button class="tool" onclick="toggleTheme()">🌓 테마 변경</button>
+    <button class="tool" onclick="downloadCSV()">📊 엑셀 리포트</button>
+    <button class="tool" onclick="resetToday()" style="color:#d9534f;">오늘 초기화</button>
+    <button class="tool" onclick="resetAll()" style="color:#d9534f;">전체 삭제</button>
+</div>
+
+<div class="chart-container">
+    <div class="chart-title">📈 시간대별 실시간 흐름 (10시-23시)</div>
+    <div class="chart-bars" id="hourlyChart"></div>
+</div>
+
+<div id="totals"></div>
+
+<script>
+let currentDay = 'day1';
+const barcodeMap = { "1": "cart", "2": "ramen", "3": "tissue", "4": "delivery" };
+
+let storageData = JSON.parse(localStorage.getItem("giftDataFinalV4")) || {
+    counts: { day1: { cart: 0, ramen: 0, tissue: 0, delivery: 0 }, day2: { cart: 0, ramen: 0, tissue: 0, delivery: 0 }, day3: { cart: 0, ramen: 0, tissue: 0, delivery: 0 }, day4: { cart: 0, ramen: 0, tissue: 0, delivery: 0 } },
+    logs: [] 
+};
+
+// 테마 상태 저장 및 로드
+if(localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
+
+function toggleTheme() {
+    document.body.classList.toggle('dark-mode');
+    const isDark = document.body.classList.contains('dark-mode');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    playClickSound(); // 테마 바뀔 때도 기분 좋은 소리
+}
+
+function playClickSound() {
+    try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1100, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(350, audioCtx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.12);
+        setTimeout(() => audioCtx.close(), 180);
+    } catch(e) {}
+}
+
+function save() { localStorage.setItem("giftDataFinalV4", JSON.stringify(storageData)); }
+function setDay(day, el) { currentDay = day; document.querySelectorAll(".day-btn").forEach(b => b.classList.remove("active")); el.classList.add("active"); render(); }
+
+function increment(item) {
+    storageData.counts[currentDay][item]++;
+    const now = new Date();
+    storageData.logs.push({ date: now.toLocaleDateString(), time: now.toLocaleTimeString(), day: currentDay, item: item, hour: now.getHours() });
+    save(); render(); playClickSound();
+    showPopup(item + "-card", "+1");
+}
+
+function decrement(item) {
+    if (storageData.counts[currentDay][item] > 0) {
+        storageData.counts[currentDay][item]--;
+        const idx = storageData.logs.map(l => l.day === currentDay && l.item === item).lastIndexOf(true);
+        if(idx > -1) storageData.logs.splice(idx, 1);
+        save(); render(); playClickSound();
+    }
+}
+
+function render() {
+    const d = storageData.counts[currentDay];
+    const items = [{id:"cart", name:"카트", icon:"🛒"}, {id:"ramen", name:"라면", icon:"🍜"}, {id:"tissue", name:"물티슈", icon:"🧻"}, {id:"delivery", name:"배달", icon:"🚚"}];
+    document.getElementById("dashboard").innerHTML = items.map(item => `
+        <div class="card" id="${item.id}-card" onclick="increment('${item.id}')">
+            <div class="icon">${item.icon}</div>
+            <div class="title">${item.name}</div>
+            <div class="count">${d[item.id]}</div>
+            <div class="status">${"正".repeat(Math.floor(d[item.id]/5)) + "+".repeat(d[item.id]%5)}</div>
+            <div class="buttons">
+                <button class="btn" onclick="event.stopPropagation(); increment('${item.id}')">+</button>
+                <button class="btn" onclick="event.stopPropagation(); decrement('${item.id}')">-</button>
+            </div>
+        </div>
+    `).join('');
+    updateTotals(); updateChart();
+}
+
+function updateChart() {
+    const hourlyData = new Array(24).fill(0);
+    const todayStr = new Date().toLocaleDateString();
+    storageData.logs.filter(l => l.date === todayStr).forEach(l => hourlyData[l.hour]++);
+    const maxVal = Math.max(...hourlyData, 5);
+    let html = "";
+    for(let i = 10; i <= 23; i++) {
+        const height = (hourlyData[i] / maxVal) * 100;
+        html += `<div class="bar-wrapper">
+            <span class="bar-val">${hourlyData[i]>0?hourlyData[i]:''}</span>
+            <div class="bar" style="height:${height}%"></div>
+            <span class="bar-label">${i}시</span>
+        </div>`;
+    }
+    document.getElementById("hourlyChart").innerHTML = html;
+}
+
+function updateTotals() {
+    let t = { cart: 0, ramen: 0, tissue: 0, delivery: 0 };
+    for (let day in storageData.counts) {
+        t.cart += storageData.counts[day].cart; t.ramen += storageData.counts[day].ramen;
+        t.tissue += storageData.counts[day].tissue; t.delivery += storageData.counts[day].delivery;
+    }
+    document.getElementById("totals").innerHTML = `[ 누적 배포 현황 ]<br>🛒 ${t.cart} | 🍜 ${t.ramen} | 🧻 ${t.tissue} | 🚚 ${t.delivery}`;
+}
+
+function showPopup(cardId, msg) {
+    const card = document.getElementById(cardId);
+    const popup = document.createElement("div");
+    popup.className = "popup"; popup.innerText = msg;
+    card.appendChild(popup);
+    setTimeout(() => popup.style.opacity = 1, 10);
+    setTimeout(() => { popup.style.opacity = 0; setTimeout(() => { if(card.contains(popup)) card.removeChild(popup) }, 300); }, 700);
+}
+
+document.getElementById("barcodeInput").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+        let code = this.value.trim();
+        if (barcodeMap[code]) increment(barcodeMap[code]);
+        this.value = "";
+    }
+});
+
+function resetToday() { if (confirm("오늘 데이터를 초기화할까요?")) { storageData.counts[currentDay] = { cart: 0, ramen: 0, tissue: 0, delivery: 0 }; storageData.logs = storageData.logs.filter(l => l.day !== currentDay); save(); render(); } }
+function resetAll() { if (confirm("전체 데이터를 삭제할까요?")) { localStorage.removeItem("giftDataFinalV4"); location.reload(); } }
+function downloadCSV() {
+    let csv = "\uFEFF시간,품목,일차\n";
+    storageData.logs.forEach(l => {
+        const name = {cart:"카트", ramen:"라면", tissue:"물티슈", delivery:"배달"}[l.item];
+        csv += `${l.date} ${l.time},${name},${l.day}\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `배포리포트_${new Date().toLocaleDateString()}.csv`;
+    link.click();
+}
+render();
+</script>
+</body>
+</html>
