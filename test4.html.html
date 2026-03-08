@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>🎁 스마트 사은품 카운터 Ultimate</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root { --emart-yellow: #FFB81C; --emart-dark: #231F20; --bg: #e0e0e0; --card-bg: #e0e0e0; --shadow1: #bebebe; --shadow2: #ffffff; --text: #333; --sub-text: #666; --accent: #ff4757; --success: #2ed573; }
+        body.dark-mode { --bg: #222222; --card-bg: #222222; --shadow1: #151515; --shadow2: #2f2f2f; --text: #eeeeee; --sub-text: #aaaaaa; }
+        body { font-family:'Noto Sans KR',sans-serif; background-color: var(--bg); margin:0; text-align:center; color:var(--text); padding-bottom: 60px; transition: 0.3s; user-select: none; -webkit-tap-highlight-color: transparent; }
+        h1 { margin:25px 10px; font-size:24px; font-weight: 900; }
+        .card:active, .btn:active, .day-btn:active, .tool:active { box-shadow: inset 5px 5px 10px var(--shadow1), inset -5px -5px 10px var(--shadow2) !important; transform: scale(0.97); transition: 0.1s; }
+        @keyframes float-up { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-60px) scale(1.3); } }
+        .plus-one-animation { position: fixed; color: var(--emart-yellow); font-weight: 900; font-size: 30px; pointer-events: none; z-index: 9999; animation: float-up 0.7s ease-out forwards; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 50% { transform: translateX(6px); } }
+        .shake-animation { animation: shake 0.2s ease-in-out; }
+        .day-nav { display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin-bottom:15px; padding:0 10px; }
+        .day-btn { padding:10px 15px; border-radius:12px; cursor:pointer; font-weight:bold; background:var(--card-bg); box-shadow:4px 4px 8px var(--shadow1), -4px -4px 8px var(--shadow2); border:none; color:var(--sub-text); font-size:13px; }
+        .day-btn.active { background: var(--emart-yellow); color: var(--emart-dark); box-shadow: inset 2px 2px 4px rgba(0,0,0,0.2); }
+        .dashboard { display:flex; justify-content:center; gap:12px; flex-wrap:wrap; padding:10px; }
+        .card { flex: 1 1 21%; max-width:260px; padding:18px; border-radius:25px; background:var(--card-bg); box-shadow:8px 8px 16px var(--shadow1), -8px -8px 16px var(--shadow2); cursor:pointer; position:relative; overflow:hidden; border: 3px solid transparent; }
+        .low-stock { animation: pulse-red 1.5s infinite; }
+        @keyframes pulse-red { 50% { border-color: var(--accent); } }
+        .icon { font-size:35px; margin-bottom:8px; pointer-events: none; }
+        .title { font-size:16px; font-weight:bold; pointer-events: none; }
+        .count { font-size:40px; margin:8px; color:var(--emart-yellow); font-weight: 900; pointer-events: none; }
+        .progress-container { width: 100%; height: 6px; background: rgba(0,0,0,0.1); border-radius: 3px; margin: 8px 0; }
+        .progress-bar { height: 100%; background: var(--emart-yellow); transition: width 0.5s; border-radius:3px; }
+        .stock-info { font-size: 11px; color: var(--sub-text); }
+        .buttons { display:flex; gap:8px; margin-top:10px; }
+        .btn { flex:1; padding:12px; font-size:20px; border:none; border-radius:12px; cursor:pointer; background:var(--card-bg); box-shadow:3px 3px 6px var(--shadow1), -3px -3px 6px var(--shadow2); color:var(--text); font-weight: bold; }
+        .main-input { padding:14px; font-size:15px; border:none; border-radius:20px; background:var(--card-bg); box-shadow:inset 4px 4px 8px var(--shadow1), inset -4px -4px 8px var(--shadow2); width:85%; max-width:380px; margin:15px 0; outline:none; text-align:center; color: var(--text); }
+        .promo-controller { background: rgba(0,0,0,0.05); padding: 15px; border-radius: 20px; margin: 10px auto; width: 90%; max-width: 500px; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+        .tools { margin-bottom:20px; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; padding: 0 10px; }
+        .tool { padding:10px 14px; border:none; border-radius:12px; cursor:pointer; background:var(--card-bg); box-shadow:3px 3px 6px var(--shadow1), -3px -3px 6px var(--shadow2); font-size:12px; font-weight:bold; color:var(--sub-text); }
+        .tool.highlight { background: var(--emart-yellow); color: black; }
+        .memo-section { margin: 15px auto; width: 90%; max-width: 580px; text-align: left; }
+        .memo-input-wrapper { display: flex; gap: 8px; align-items: stretch; }
+        .memo-input-wrapper .main-input { flex: 1; margin: 0; max-width: 100%; box-sizing: border-box; height: 48px; border-radius: 20px; }
+        .memo-input-wrapper .tool { margin: 0; padding: 0 20px; height: 48px; border-radius: 20px; font-size: 14px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
+        .memo-list { margin-top: 8px; background: rgba(0,0,0,0.04); border-radius: 12px; padding: 12px; font-size: 12px; max-height: 100px; overflow-y: auto; color: var(--sub-text); line-height: 1.6; }
+        .chart-container { margin: 20px auto; width: 90%; max-width: 580px; padding: 18px; border-radius: 20px; background: var(--card-bg); box-shadow: 8px 8px 16px var(--shadow1), -8px -8px 16px var(--shadow2); }
+        .chart-bars { display: flex; align-items: flex-end; justify-content: space-between; height: 80px; border-bottom: 2px solid #666; padding-top:10px; }
+        .bar { width: 50%; background: var(--emart-yellow); border-radius: 3px 3px 0 0; }
+        #totals { margin: 25px auto; width: 92%; max-width: 600px; padding: 20px 15px; border-radius: 25px; background: var(--emart-dark); color: white; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .total-header { font-size: 13px; color: var(--emart-yellow); margin-bottom: 12px; font-weight: 900; }
+        .total-grid { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+        .total-badge { background: rgba(255, 255, 255, 0.08); padding: 8px 12px; border-radius: 15px; display: flex; align-items: center; gap: 6px; }
+        .total-badge .t-count { font-weight: bold; color: var(--emart-yellow); }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.75); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+        .modal-overlay.show { display: flex; }
+        .modal { background: var(--bg); padding: 20px; border-radius: 20px; width: 90%; max-width: 400px; max-height: 85vh; overflow-y: auto; text-align: left; color: var(--text); }
+        .modal-btn { padding: 12px; background: var(--emart-yellow); border: none; border-radius: 10px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
+    </style>
+</head>
+<body>
+<h1>🎁 사은품 카운터 Ultimate</h1>
+<div class="day-nav" id="dayNav"></div><div class="dashboard" id="dashboard"></div>
+<input id="barcodeInput" class="main-input" placeholder="바코드 스캔 또는 직접 입력" autofocus>
+
+<div class="promo-controller">
+    <div style="font-weight:bold; font-size:14px; margin-right:5px;">📣 사은품 안내</div>
+    <button id="playBtn" class="tool highlight" onclick="togglePromo()">▶ 재생</button>
+    <button class="tool" onclick="stopPromo()">⏹ 정지</button>
+    <select id="voiceSelect" class="tool" onchange="stopPromo()">
+        <option value="male">남성</option>
+        <option value="female">여성</option>
+    </select>
+</div>
+
+<div class="tools">    
+    <button class="tool" onclick="copySummary()">📋 카톡 보고용 복사</button>    
+    <button class="tool" onclick="undoLastAction()">⏪ 실행 취소</button>    
+    <button class="tool" onclick="toggleTheme()">🌓 테마 변경</button>    
+    <button class="tool" onclick="checkAdmin(openSettings)">⚙️ 설정</button>    
+    <button class="tool" onclick="downloadAdvancedCSV()">📊 엑셀 저장</button>    
+    <button class="tool" onclick="backupData()">💾 백업</button>    
+    <button class="tool" onclick="document.getElementById('mergeFile').click()">👯 데이터 합치기</button>    
+    <input type="file" id="mergeFile" style="display:none" accept=".json" onchange="mergeData(event)">    
+    <button class="tool" onclick="checkAdmin(resetToday)" style="color:#d9534f;">오늘 초기화</button>
+</div>
+
+<div class="memo-section">    
+    <div class="memo-input-wrapper">        
+        <input id="memoInput" class="main-input" placeholder="특이사항 메모...">        
+        <button class="tool" onclick="addMemo()">기록</button>    
+    </div>    
+    <div class="memo-list" id="memoList"></div>
+</div>
+<div class="chart-container">    
+    <div style="font-size:12px; margin-bottom:10px; font-weight:bold; color:var(--sub-text);">📈 시간대별 배포 추이</div>    
+    <div class="chart-bars" id="hourlyChart"></div>
+</div>
+<div id="totals"></div>
+
+<div class="modal-overlay" id="settingsModal">    
+    <div class="modal">        
+        <h3 style="margin-top:0;">⚙️ 시스템 설정</h3>        
+        <div id="settingsItems"></div>        
+        <hr style="border:0.5px solid #ccc; margin:15px 0;">        
+        <h4 style="margin:0 0 10px 0;">🔑 관리자 비번 / 날짜명</h4>        
+        <input type="password" id="adminPwInput" class="main-input" style="width:92%; margin:5px 0;" placeholder="새 비밀번호">        
+        <div id="settingsDays" style="margin-top:10px;"></div>        
+        <button class="modal-btn" onclick="saveSettings()">저장 및 적용</button>        
+        <button class="modal-btn" style="background:#bbb;" onclick="closeSettings()">닫기</button>    
+    </div>
+</div>
+
+<script>
+// 기존 변수 및 설정
+const DEFAULT_SETTINGS = { days: ["1일차", "2일차", "3일차", "4일차"], adminPw: "0000", items: [ {id: "item1", name: "카트", icon: "🛒", barcode: "1", target: 100}, {id: "item2", name: "라면", icon: "🍜", barcode: "2", target: 200}, {id: "item3", name: "물티슈", icon: "🧻", barcode: "3", target: 150}, {id: "item4", name: "배달", icon: "🚚", barcode: "4", target: 50} ]};
+let currentDay = 'day1', undoStack = [], isPlaying = false, voices = [];
+let storageData = JSON.parse(localStorage.getItem("giftDataUltimateV1")) || { counts: { day1:{}, day2:{}, day3:{}, day4:{} }, logs: [], memos: [], settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS))};
+
+// [스피치 기능 추가]
+window.speechSynthesis.onvoiceschanged = () => { voices = window.speechSynthesis.getVoices(); };
+
+function togglePromo() {
+    if (isPlaying) return stopPromo();
+    const text = "안녕하세요 고객님, 사은행사 안내드립니다. 카트 사은품은 8만원 이상, 라면은 4만원 이상 구매 시 증정해 드립니다. 단, 양곡, 술, 담배, 종량제 봉투는 행사 제외 품목입니다. 또한, 앱 설치 후 단골 매장 설정 시 물티슈를 드리고 있으며, 3만원 이상 구매 시 배달 서비스도 무료로 이용 가능합니다. 많은 참여 바랍니다.";
+    const msg = new SpeechSynthesisUtterance(text);
+    const gender = document.getElementById("voiceSelect").value;
+    const v = voices.find(v => v.lang === 'ko-KR' && (gender === 'male' ? v.name.includes('Male') : v.name.includes('Female')));
+    if (v) msg.voice = v;
+    msg.onend = () => { isPlaying = false; document.getElementById("playBtn").textContent = "▶ 재생"; };
+    window.speechSynthesis.speak(msg);
+    isPlaying = true;
+    document.getElementById("playBtn").textContent = "■ 재생 중...";
+}
+function stopPromo() { window.speechSynthesis.cancel(); isPlaying = false; document.getElementById("playBtn").textContent = "▶ 재생"; }
+
+// [기존 함수들 그대로 유지]
+function save() { localStorage.setItem("giftDataUltimateV1", JSON.stringify(storageData)); }
+function increment(itemId, event) {
+    if (navigator.vibrate) navigator.vibrate(35);
+    if (event) { const target = event.currentTarget; target.classList.add("shake-animation"); setTimeout(() => target.classList.remove("shake-animation"), 200); const span = document.createElement("span"); span.textContent = "+1"; span.className = "plus-one-animation"; span.style.left = event.clientX + "px"; span.style.top = (event.clientY - 40) + "px"; document.body.appendChild(span); setTimeout(() => span.remove(), 700); }
+    if(!storageData.counts[currentDay][itemId]) storageData.counts[currentDay][itemId] = 0;
+    storageData.counts[currentDay][itemId]++;
+    const log = { date: new Date().toLocaleDateString(), time: new Date().toLocaleTimeString(), day: currentDay, item: itemId, hour: new Date().getHours() };
+    storageData.logs.push(log);
+    undoStack.push({ type:'inc', day:currentDay, item:itemId, log:log });
+    save(); render();
+}
+function decrement(itemId) {
+    if (storageData.counts[currentDay][itemId] > 0) {
+        storageData.counts[currentDay][itemId]--;
+        const idx = storageData.logs.map(l => l.day === currentDay && l.item === itemId).lastIndexOf(true);
+        if(idx > -1) undoStack.push({ type:'dec', day:currentDay, item:itemId, log:storageData.logs.splice(idx, 1)[0] });
+        save(); render();
+    }
+}
+function undoLastAction() {
+    if (undoStack.length === 0) return alert("취소 불가");
+    const a = undoStack.pop();
+    if(a.type === 'inc') { storageData.counts[a.day][a.item]--; const i = storageData.logs.indexOf(a.log); if(i > -1) storageData.logs.splice(i, 1); } 
+    else { storageData.counts[a.day][a.item]++; if(a.log) storageData.logs.push(a.log); }
+    save(); render();
+}
+function render() {
+    const counts = storageData.counts[currentDay];
+    document.getElementById("dashboard").innerHTML = storageData.settings.items.map(item => {
+        const count = counts[item.id] || 0;
+        const isFull = item.target > 0 && count >= item.target;
+        return `<div class="card" onclick="increment('${item.id}', event)">
+                    <div class="icon">${item.icon}</div><div class="title">${item.name}</div>
+                    <div class="count" style="color:${isFull ? 'var(--success)' : 'var(--emart-yellow)'}">${count}</div>
+                    <div class="buttons">
+                        <button class="btn" onclick="event.stopPropagation(); increment('${item.id}', event)">+</button>
+                        <button class="btn" onclick="event.stopPropagation(); decrement('${item.id}')">-</button>
+                    </div>
+                </div>`;
+    }).join('');
+    renderNav(); updateTotals(); updateChart(); renderMemos();
+}
+function renderNav() { document.getElementById("dayNav").innerHTML = storageData.settings.days.map((day, idx) => ` <button class="day-btn ${currentDay==='day'+(idx+1)?'active':''}" onclick="currentDay='day${idx+1}'; render();">${day}</button> `).join(''); }
+function updateTotals() { let totals = {}; storageData.settings.items.forEach(it => { totals[it.id] = { name: it.name, icon: it.icon, count: 0 }; for(let d in storageData.counts) totals[it.id].count += (storageData.counts[d][it.id] || 0); }); let html = `<div class="total-header">📊 누적 배포 합계</div><div class="total-grid">`; Object.values(totals).forEach(d => { html += `<div class="total-badge"><span>${d.icon}</span><span>${d.count.toLocaleString()}</span></div>`; }); document.getElementById("totals").innerHTML = html + `</div>`; }
+function updateChart() { const hourly = new Array(24).fill(0); storageData.logs.filter(l => l.day === currentDay).forEach(l => hourly[l.hour]++); let html = ""; for(let i = 10; i <= 21; i++) { const h = (hourly[i] / Math.max(...hourly, 5)) * 100; html += `<div style="flex:1; display:flex; flex-direction:column; align-items:center;"><span style="font-size:8px;">${hourly[i]||''}</span><div class="bar" style="height:${h}%"></div><span style="font-size:8px; margin-top:3px;">${i}</span></div>`; } document.getElementById("hourlyChart").innerHTML = html; }
+function addMemo() { const input = document.getElementById("memoInput"); if(!input.value.trim()) return; storageData.memos.push({ day: currentDay, text: `[${new Date().toLocaleTimeString()}] ${input.value}` }); input.value = ""; save(); renderMemos(); }
+function renderMemos() { const filtered = storageData.memos.filter(m => m.day === currentDay); document.getElementById("memoList").innerHTML = filtered.length ? filtered.map(m => `<div>${m.text}</div>`).reverse().join('') : "기록 없음"; }
+function toggleTheme() { document.body.classList.toggle('dark-mode'); localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light'); }
+function checkAdmin(cb) { const pw = prompt("관리자 비밀번호:"); if(pw === storageData.settings.adminPw) cb(); else if(pw !== null) alert("틀렸습니다."); }
+function openSettings() { document.getElementById("settingsItems").innerHTML = storageData.settings.items.map((item, idx) => ` <div style="display:flex; gap:5px; margin-bottom:5px;"><input class="tool" style="width:35px; box-shadow:none; border:1px solid #ccc;" id="s_icon_${idx}" value="${item.icon}"> <input class="tool" style="flex:1; box-shadow:none; border:1px solid #ccc;" id="s_name_${idx}" value="${item.name}"> <input class="tool" style="width:50px; box-shadow:none; border:1px solid #ccc;" id="s_tg_${idx}" value="${item.target}"> </div>`).join(''); document.getElementById("settingsDays").innerHTML = storageData.settings.days.map((d, idx) => `<input class="tool" style="width:43%; margin:2px;" id="s_day_${idx}" value="${d}">`).join(''); document.getElementById("settingsModal").classList.add("show"); }
+function saveSettings() { storageData.settings.items.forEach((item, idx) => { item.icon = document.getElementById(`s_icon_${idx}`).value; item.name = document.getElementById(`s_name_${idx}`).value; item.target = parseInt(document.getElementById(`s_tg_${idx}`).value) || 0; }); storageData.settings.days = storageData.settings.days.map((_, i) => document.getElementById(`s_day_${i}`).value); if(document.getElementById("adminPwInput").value) storageData.settings.adminPw = document.getElementById("adminPwInput").value; save(); closeSettings(); render(); }
+function closeSettings() { document.getElementById("settingsModal").classList.remove("show"); }
+function resetToday() { if(confirm("초기화할까요?")) { storageData.counts[currentDay] = {}; storageData.logs = storageData.logs.filter(l => l.day !== currentDay); storageData.memos = storageData.memos.filter(m => m.day !== currentDay); save(); render(); } }
+function backupData() { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([JSON.stringify(storageData)], {type:"application/json"})); a.download = `사은품_백업.json`; a.click(); }
+function mergeData(event) { const reader = new FileReader(); reader.onload = function(e) { try { const ext = JSON.parse(e.target.result); for(let d in ext.counts) { if(!storageData.counts[d]) storageData.counts[d] = {}; for(let id in ext.counts[d]) storageData.counts[d][id] = (storageData.counts[d][id] || 0) + ext.counts[d][id]; } storageData.logs = [...storageData.logs, ...(ext.logs || [])]; storageData.memos = [...storageData.memos, ...(ext.memos || [])]; save(); render(); alert("병합 완료"); } catch(err) { alert("오류"); } }; reader.readAsText(file); }
+function downloadAdvancedCSV() { let csv = "\uFEFF품목," + storageData.settings.days.join(",") + ",합계\n"; storageData.settings.items.forEach(item => { let row = [item.name], sum = 0; storageData.settings.days.forEach((_, i) => { const c = (storageData.counts[`day${i+1}`] && storageData.counts[`day${i+1}`][item.id]) || 0; row.push(c); sum += c; }); row.push(sum); csv += row.join(",") + "\n"; }); const link = document.createElement("a"); link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' })); link.download = `사은품_리포트.csv`; link.click(); }
+function copySummary() { let text = "[사은품 현황]\n"; storageData.settings.items.forEach(item => text += `${item.icon} ${item.name}: ${storageData.counts[currentDay][item.id] || 0}\n`); navigator.clipboard.writeText(text).then(() => alert("복사 완료")); }
+if(localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
+render();
+</script>
+</body>
+</html>
