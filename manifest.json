@@ -1,0 +1,15 @@
+{
+  "name": "AI 스마트 사은품 카운터",
+  "short_name": "사은품카운터",
+  "start_url": "./28.html",
+  "display": "standalone",
+  "background_color": "#FFB81C",
+  "theme_color": "#FFB81C",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1162/1162251.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
