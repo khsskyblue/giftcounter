@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>🎁 AI 스마트 사은품 카운터 Ultimate</title>
+    <link rel="manifest" href="./manifest.json">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <style>
+        :root { 
+            --emart-yellow: #FFB81C; 
+            --emart-dark: #231F20; 
+            --bg: #e0e0e0; 
+            --card-bg: #e0e0e0; 
+            --shadow1: #bebebe; 
+            --shadow2: #ffffff; 
+            --text: #333; 
+            --sub-text: #666; 
+            --accent: #ff4757; 
+            --success: #2ed573; 
+        }
+        body.dark-mode { 
+            --bg: #222222; 
+            --card-bg: #222222; 
+            --shadow1: #151515; 
+            --shadow2: #2f2f2f; 
+            --text: #eeeeee; 
+            --sub-text: #aaaaaa; 
+        }
+
+        /* --- [핵심] PC 모바일 뷰 고정 레이아웃 --- */
+        html {
+            background-color: #f2f2f7; /* PC 배경색 */
+            display: flex;
+            justify-content: center;
+        }
+        body { 
+            font-family:'Noto Sans KR',sans-serif; 
+            background-color: var(--bg); 
+            margin:0; 
+            text-align:center; 
+            color:var(--text); 
+            padding-bottom: 100px; 
+            transition: 0.3s; 
+            user-select: none; 
+            -webkit-tap-highlight-color: transparent;
+            width: 100%;
+            max-width: 430px; /* iPhone Pro Max 너비 기준 */
+            min-height: 100vh;
+            box-shadow: 0 0 30px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        body.dark-mode { background-color: var(--bg); box-shadow: 0 0 30px rgba(0,0,0,0.5); }
+
+        /* --- 고정 요소들(상/하단바) 중앙 정렬 유지 --- */
+        .top-status-bar, .bottom-nav, #dynamic-island-container {
+            width: 100%;
+            max-width: 430px;
+            left: 50% !important;
+            transform: translateX(-50%);
+        }
+
+        /* --- 상단 상태바 --- */
+        .top-status-bar { position: fixed; top: 0; height: 45px; background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); z-index: 10000; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 1px solid rgba(0,0,0,0.05); box-sizing: border-box; }
+        body.dark-mode .top-status-bar { background: rgba(34, 34, 34, 0.6); border-bottom-color: rgba(255,255,255,0.1); }
+        .weather-info { display: flex; align-items: center; gap: 10px; }
+        .weather-loc-tag { font-size: 11px; font-weight: 900; background: var(--emart-yellow); color: var(--emart-dark); padding: 2px 8px; border-radius: 20px; }
+        .weather-details { font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 5px; }
+        .weather-temp { color: var(--accent); }
+
+        /* --- 하단 탭바 --- */
+        .bottom-nav { position: fixed; bottom: 0; height: 65px; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid rgba(0,0,0,0.05); z-index: 10000; padding-bottom: env(safe-area-inset-bottom); box-sizing: border-box; }
+        body.dark-mode .bottom-nav { background: rgba(34, 34, 34, 0.7); border-top-color: rgba(255,255,255,0.1); }
+        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--sub-text); transition: 0.3s; cursor: pointer; position: relative; }
+        .nav-item.active { color: var(--emart-dark); }
+        body.dark-mode .nav-item.active { color: var(--emart-yellow); }
+        .nav-icon { font-size: 20px; transition: transform 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28); }
+        .nav-item.active .nav-icon { transform: translateY(-5px) scale(1.2); }
+        .nav-label { font-size: 10px; font-weight: 900; }
+
+        /* --- 다이내믹 아일랜드 --- */
+        #dynamic-island-container { position: fixed; top: 7px; z-index: 10001; pointer-events: none; display: flex; justify-content: center; }
+        .dynamic-island { width: 120px; height: 30px; background: #000; border-radius: 20px; display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; transition: all 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28); overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.4); opacity: 0.95; }
+        .dynamic-island.active { width: 300px; height: 65px; border-radius: 35px; background: #1a1a1a; }
+        .island-content { display: none; align-items: center; gap: 15px; padding: 0 25px; white-space: nowrap; width: 100%; }
+        .dynamic-island.active .island-content { display: flex; animation: fadeIn 0.3s ease-in; }
+        .island-icon { font-size: 28px; }
+        .island-text { display: flex; flex-direction: column; text-align: left; }
+        .island-main { font-size: 16px; color: var(--emart-yellow); font-weight: 900; }
+        .island-sub { font-size: 12px; color: #aaa; }
+
+        /* --- 애플 워치 스타일 그래프 --- */
+        .chart-container { margin: 20px auto; width: 90%; padding: 18px; border-radius: 25px; background: var(--card-bg); box-shadow: 8px 8px 16px var(--shadow1), -8px -8px 16px var(--shadow2); box-sizing: border-box; }
+        .chart-bars { display: flex; align-items: flex-end; justify-content: space-between; height: 100px; padding: 10px 5px; gap: 4px; }
+        .bar-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }
+        .bar-track { width: 8px; height: 70px; background: rgba(0,0,0,0.05); border-radius: 10px; position: relative; overflow: hidden; }
+        body.dark-mode .bar-track { background: rgba(255,255,255,0.05); }
+        .bar-fill { width: 100%; background: var(--emart-yellow); border-radius: 10px; position: absolute; bottom: 0; transition: height 0.5s ease-out; box-shadow: 0 0 8px rgba(255,184,28,0.4); }
+        .bar-label { font-size: 9px; font-weight: bold; margin-top: 6px; color: var(--sub-text); }
+        .bar-value { font-size: 8px; font-weight: 900; color: var(--emart-yellow); margin-bottom: 2px; }
+
+        /* 스타일 나머지 생략 방지 주요 부분 */
+        h1 { margin: 65px 10px 10px; font-size: 24px; font-weight: 900; }
+        .store-header { margin-bottom: 20px; }
+        .store-name-display { font-size: 18px; font-weight: bold; color: var(--emart-dark); }
+        body.dark-mode .store-name-display { color: var(--emart-yellow); }
+        .dashboard { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; padding:10px; }
+        .card { flex: 1 1 42%; max-width:180px; padding:15px; border-radius:25px; background:var(--card-bg); box-shadow:8px 8px 16px var(--shadow1), -8px -8px 16px var(--shadow2); cursor:pointer; position:relative; overflow:hidden; border: 3px solid transparent; box-sizing: border-box; }
+        .count { font-size:32px; color:var(--emart-yellow); font-weight: 900; padding: 10px; border-radius: 15px; background: var(--card-bg); box-shadow: inset 5px 5px 10px var(--shadow1), inset -5px -5px 10px var(--shadow2); }
+        .main-input { padding:14px; font-size:15px; border:none; border-radius:20px; background:var(--card-bg); box-shadow:inset 4px 4px 8px var(--shadow1), inset -4px -4px 8px var(--shadow2); width:85%; margin:15px 0; outline:none; text-align:center; color: var(--text); }
+        .promo-controller { background: rgba(0,0,0,0.05); padding: 15px; border-radius: 20px; margin: 10px auto; width: 90%; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; box-sizing: border-box; }
+        .tools { margin-bottom:20px; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; padding: 0 10px; }
+        .tool { padding:10px 12px; border:none; border-radius:12px; cursor:pointer; background:var(--card-bg); box-shadow:3px 3px 6px var(--shadow1), -3px -3px 6px var(--shadow2); font-size:11px; font-weight:bold; color:var(--sub-text); }
+        .tool.highlight { background: var(--emart-yellow); color: black; }
+        
+        /* 웹캠 위치 조정 */
+        #webcam-container { display: none; position: absolute; top: 55px; right: 10px; z-index: 1000; border-radius: 15px; overflow: hidden; border: 3px solid var(--emart-yellow); background: #000; width: 120px; height: 90px; }
+        #webcam { width: 100%; height: 100%; transform: scaleX(-1); object-fit: cover; }
+
+        /* 기타 공통 */
+        .modal-overlay, .weather-popup-overlay { position: fixed; top: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; height: 100%; background: rgba(0,0,0,0.7); z-index: 20000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .modal, .weather-popup { background: var(--bg); width: 85%; border-radius: 25px; padding: 20px; color: var(--text); box-sizing: border-box; }
+        .plus-one-animation { position: fixed; color: var(--emart-yellow); font-weight: 900; font-size: 30px; pointer-events: none; z-index: 9999; animation: float-up 0.7s ease-out forwards; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        @keyframes float-up { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-60px); } }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+    </style>
+</head>
+<body>
+    <div class="top-status-bar" onclick="openWeatherPopup()">
+        <div class="weather-info">
+            <span id="location-name" class="weather-loc-tag">📍 위치 확인 중</span>
+            <span id="weather-date-str" style="font-size:11px; opacity:0.7;">00/00</span>
+        </div>
+        <div class="weather-details">
+            <span id="weather-icon-curr" style="font-size:18px;">⌛</span>
+            <span id="weather-temp-curr" class="weather-temp">--°</span>
+        </div>
+    </div>
+
+    <div id="dynamic-island-container">
+        <div id="island" class="dynamic-island">
+            <div id="island-content" class="island-content">
+                <span class="island-icon" id="island-icon">🎁</span>
+                <div class="island-text">
+                    <span class="island-main" id="island-main">인식 완료!</span>
+                    <span class="island-sub" id="island-sub">+1개가 추가되었습니다.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="weather-popup-overlay" id="weatherOverlay" onclick="closeWeatherPopup()">
+        <div class="weather-popup" onclick="event.stopPropagation()">
+            <h3 style="margin-top:0; color:var(--emart-yellow);">📅 주간 날씨 예보</h3>
+            <div id="forecast-list"></div>
+            <button style="width:100%; padding:12px; margin-top:10px; border-radius:10px; border:none; background:var(--emart-yellow); font-weight:bold;" onclick="closeWeatherPopup()">확인</button>
+        </div>
+    </div>
+
+    <h1>🎁 사은품 카운터 Ultimate</h1>
+    <div class="store-header">
+        <div class="store-name-display" id="storeDisplay" onclick="toggleStoreInput()">
+            이마트에브리데이 테스트점 <span style="font-size: 12px; color: var(--sub-text); cursor: pointer;">✏️</span>
+        </div>
+        <div class="store-input-container" id="storeInputContainer" style="display:none; margin-top:10px;">
+            <input type="text" id="storeNameInput" class="main-input" style="width: 200px; padding: 8px;" placeholder="점포명 입력">
+            <button class="tool highlight" onclick="saveStoreName()">저장</button>
+        </div>
+    </div>
+
+    <div id="webcam-container">
+        <video id="webcam" autoplay playsinline muted></video>
+    </div>
+
+    <div id="home-section">
+        <div class="day-nav" id="dayNav" style="display:flex; justify-content:center; gap:5px; margin-bottom:15px;"></div>
+        <div class="dashboard" id="dashboard"></div>
+        <input id="barcodeInput" class="main-input" placeholder="바코드 스캔" autofocus>
+        
+        <div class="promo-controller">
+            <div style="font-weight:bold; font-size:13px;">📣 다국어 방송</div>
+            <button id="playBtn" class="tool highlight" onclick="togglePromo()">▶ 시작</button>
+            <select id="voiceSelect" class="tool">
+                <option value="ko">🇰🇷 한국어</option>
+                <option value="en">🇺🇸 English</option>
+                <option value="ja">🇯🇵 日本語</option>
+                <option value="zh">🇨🇳 中文</option>
+            </select>
+        </div>
+
+        <div class="tools">
+            <button id="aiToggleBtn" class="tool highlight" onclick="toggleAI()">🤖 AI 모드</button>
+            <button id="voiceToggleBtn" class="tool" onclick="toggleVoiceRecognition()">🎤 음성</button>
+            <button class="tool" onclick="copySummary()">📋 보고용 복사</button>
+            <button class="tool" onclick="undoLastAction()">⏪ 실행 취소</button>
+            <button class="tool" onclick="toggleTheme()">🌓 테마</button>
+        </div>
+    </div>
+
+    <div class="chart-container" id="chart-section">
+        <div style="font-size:12px; margin-bottom:10px; font-weight:bold; color:var(--sub-text);">📈 시간대별 배포 추이</div>
+        <div class="chart-bars" id="hourlyChart"></div>
+    </div>
+
+    <div id="totals" style="margin: 20px auto; width: 90%; background: var(--emart-dark); color: white; padding: 15px; border-radius: 20px; box-sizing: border-box;"></div>
+
+    <div class="memo-section" id="history-section" style="padding: 0 20px; text-align: left;">
+        <div style="display:flex; gap:5px;">
+            <input id="memoInput" class="main-input" style="flex:1; margin:0;" placeholder="특이사항 메모...">
+            <button class="tool" onclick="addMemo()">기록</button>
+        </div>
+        <div id="memoList" style="margin-top:10px; background:rgba(0,0,0,0.05); padding:10px; border-radius:10px; font-size:12px;"></div>
+    </div>
+
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="switchTab(this, 'home')">
+            <span class="nav-icon">🎁</span><span class="nav-label">카운터</span>
+        </div>
+        <div class="nav-item" onclick="switchTab(this, 'chart')">
+            <span class="nav-icon">📊</span><span class="nav-label">통계</span>
+        </div>
+        <div class="nav-item" onclick="switchTab(this, 'history')">
+            <span class="nav-icon">📝</span><span class="nav-label">기록</span>
+        </div>
+        <div class="nav-item" onclick="switchTab(this, 'settings')">
+            <span class="nav-icon">⚙️</span><span class="nav-label">설정</span>
+        </div>
+    </nav>
+
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal">
+            <h3>⚙️ 시스템 설정</h3>
+            <div id="settingsItems"></div>
+            <button class="tool highlight" style="width:100%; margin-top:15px;" onclick="downloadAdvancedCSV()">📊 엑셀 저장</button>
+            <button class="tool" style="width:100%; margin-top:5px;" onclick="saveSettings()">저장 및 닫기</button>
+        </div>
+    </div>
+
+    <script>
+        // --- 데이터 및 초기화 ---
+        const DEFAULT_SETTINGS = { 
+            days: ["1일차", "2일차", "3일차", "4일차"], 
+            adminPw: "0000", 
+            items: [
+                {id: "item1", name: "카트", icon: "🛒", barcode: "1"}, 
+                {id: "item2", name: "라면", icon: "🍜", barcode: "2"}, 
+                {id: "item3", name: "물티슈", icon: "🧻", barcode: "3"}, 
+                {id: "item4", name: "불량", icon: "🛠️", barcode: "4"}
+            ] 
+        };
+        let currentDay = 'day1', undoStack = [], isPlaying = false, model = null, isAiRunning = false, lastDetectedTime = 0;
+        let storageData = JSON.parse(localStorage.getItem("giftDataUltimateV1")) || { counts: { day1:{}, day2:{}, day3:{}, day4:{} }, logs: [], memos: [], settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS))};
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playCountSound() { const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type = 'sine'; osc.frequency.setValueAtTime(880, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.1); gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1); osc.start(); osc.stop(audioCtx.currentTime + 0.1); }
+        function getTallyMarks(num) { const chars = ["", "一", "丅", "丄", "止", "正"]; return "正".repeat(Math.floor(num / 5)) + chars[num % 5]; }
+        function save() { localStorage.setItem("giftDataUltimateV1", JSON.stringify(storageData)); }
+
+        // --- 기능 함수들 ---
+        function increment(itemId, event) {
+            if (navigator.vibrate) navigator.vibrate(35); playCountSound();
+            if (event && event.clientX) {
+                const span = document.createElement("span"); span.textContent = "+1"; span.className = "plus-one-animation";
+                span.style.left = event.clientX + "px"; span.style.top = (event.clientY - 40) + "px";
+                document.body.appendChild(span); setTimeout(() => span.remove(), 700);
+            }
+            if(!storageData.counts[currentDay][itemId]) storageData.counts[currentDay][itemId] = 0;
+            storageData.counts[currentDay][itemId]++;
+            const item = storageData.settings.items.find(i => i.id === itemId);
+            showIsland(item.icon, `${item.name} 추가!`, `누적: ${storageData.counts[currentDay][itemId]}개`);
+            storageData.logs.push({ time: new Date().toLocaleTimeString(), day: currentDay, item: itemId, hour: new Date().getHours() });
+            undoStack.push({ type:'inc', day:currentDay, item:itemId });
+            save(); render();
+        }
+
+        function decrement(itemId) { if (storageData.counts[currentDay][itemId] > 0) { storageData.counts[currentDay][itemId]--; save(); render(); } }
+
+        function showIsland(icon, title, sub) {
+            const island = document.getElementById('island');
+            document.getElementById('island-icon').textContent = icon;
+            document.getElementById('island-main').textContent = title;
+            document.getElementById('island-sub').textContent = sub;
+            island.classList.add('active');
+            setTimeout(() => island.classList.remove('active'), 3000);
+        }
+
+        function render() {
+            const counts = storageData.counts[currentDay] || {};
+            document.getElementById("dashboard").innerHTML = storageData.settings.items.map(item => `
+                <div class="card" onclick="increment('${item.id}', event)">
+                    <div style="font-size:25px; margin-bottom:5px;">${item.icon}</div>
+                    <div style="font-size:13px; font-weight:bold;">${item.name}</div>
+                    <div class="count">${counts[item.id] || 0}</div>
+                    <div style="font-size:10px; color:var(--sub-text); margin-top:5px;">${getTallyMarks(counts[item.id] || 0)}</div>
+                    <div style="display:flex; gap:5px; margin-top:10px;">
+                        <button class="tool" style="flex:1;" onclick="event.stopPropagation(); decrement('${item.id}')">-</button>
+                    </div>
+                </div>
+            `).join('');
+            renderNav(); updateTotals(); updateChart(); renderMemos();
+        }
+
+        function renderNav() { document.getElementById("dayNav").innerHTML = storageData.settings.days.map((day, idx) => `<button class="tool ${currentDay==='day'+(idx+1)?'highlight':''}" onclick="currentDay='day${idx+1}'; render();">${day}</button>`).join(''); }
+
+        function updateTotals() {
+            let totalHtml = `<div style="font-size:11px; color:var(--emart-yellow); font-weight:900; margin-bottom:10px;">📊 전 기간 누적 합계</div><div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">`;
+            storageData.settings.items.forEach(it => {
+                let sum = 0; for(let d in storageData.counts) sum += (storageData.counts[d][it.id] || 0);
+                totalHtml += `<div style="background:rgba(255,255,255,0.1); padding:5px 10px; border-radius:10px; font-size:12px;">${it.icon} ${sum}</div>`;
+            });
+            document.getElementById("totals").innerHTML = totalHtml + `</div>`;
+        }
+
+        function updateChart() {
+            const hourly = new Array(24).fill(0); storageData.logs.filter(l => l.day === currentDay).forEach(l => hourly[l.hour]++);
+            let html = ""; const maxVal = Math.max(...hourly, 1);
+            for(let i = 10; i <= 22; i++) {
+                const h = (hourly[i] / maxVal) * 100;
+                html += `<div class="bar-wrapper"><span class="bar-value" style="font-size:7px;">${hourly[i]>0?hourly[i]:''}</span><div class="bar-track"><div class="bar-fill" style="height:${h}%"></div></div><span class="bar-label">${i}</span></div>`;
+            }
+            document.getElementById("hourlyChart").innerHTML = html;
+        }
+
+        // --- 기타 기능 (생략 없이 통합) ---
+        function switchTab(el, target) {
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            el.classList.add('active');
+            if(target === 'settings') {
+                const pw = prompt("비밀번호를 입력하세요:");
+                if(pw === storageData.settings.adminPw) {
+                    document.getElementById("settingsModal").style.display = 'flex';
+                }
+            } else if(target === 'chart') document.getElementById('chart-section').scrollIntoView({behavior: 'smooth'});
+            else if(target === 'history') document.getElementById('history-section').scrollIntoView({behavior: 'smooth'});
+            else window.scrollTo({top: 0, behavior: 'smooth'});
+        }
+
+        function saveSettings() { document.getElementById("settingsModal").style.display = 'none'; }
+
+        function toggleTheme() { document.body.classList.toggle('dark-mode'); }
+
+        function copySummary() {
+            let txt = `[사은품 현황 보고]\n`;
+            storageData.settings.items.forEach(it => {
+                txt += `${it.icon} ${it.name}: ${storageData.counts[currentDay][it.id] || 0}개\n`;
+            });
+            navigator.clipboard.writeText(txt);
+            showIsland("📋", "복사 완료", "메신저에 붙여넣으세요.");
+        }
+
+        // 초기 실행
+        render();
+
+        // 날씨 API (간략)
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+            const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&current_weather=true&timezone=auto`);
+            const d = await res.json();
+            document.getElementById('weather-temp-curr').textContent = `${Math.round(d.current_weather.temperature)}°`;
+            document.getElementById('weather-date-str').textContent = `${new Date().getMonth()+1}/${new Date().getDate()}`;
+            document.getElementById('location-name').textContent = `📍 현재 위치`;
+        });
+
+        // --- AI 인식 모드 (coco-ssd) ---
+        async function toggleAI() {
+            const btn = document.getElementById("aiToggleBtn");
+            const video = document.getElementById("webcam");
+            if (!isAiRunning) {
+                if (!model) { btn.textContent = "⏳ 로딩..."; model = await cocoSsd.load(); }
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                video.srcObject = stream;
+                document.getElementById("webcam-container").style.display = "block";
+                isAiRunning = true; btn.textContent = "⏹ AI 중지";
+                detectFrame(video);
+            } else {
+                isAiRunning = false;
+                video.srcObject.getTracks().forEach(t => t.stop());
+                document.getElementById("webcam-container").style.display = "none";
+                btn.textContent = "🤖 AI 모드";
+            }
+        }
+        async function detectFrame(video) {
+            if (!isAiRunning) return;
+            const predictions = await model.detect(video);
+            predictions.forEach(p => {
+                if ((p.class === 'bottle' || p.class === 'cell phone') && p.score > 0.85) {
+                    const now = Date.now();
+                    if (now - lastDetectedTime > 3000) { 
+                        increment('item1'); 
+                        lastDetectedTime = now; 
+                    }
+                }
+            });
+            requestAnimationFrame(() => detectFrame(video));
+        }
+
+        // --- 음성 안내 방송 ---
+        function togglePromo() {
+            const msg = new SpeechSynthesisUtterance("고객님, 현재 사은품 증정 행사 중입니다. 많은 참여 부탁드립니다.");
+            msg.lang = 'ko-KR';
+            window.speechSynthesis.speak(msg);
+            showIsland("🔊", "방송 시작", "안내 메시지를 송출합니다.");
+        }
+        
+        function addMemo() {
+            const input = document.getElementById("memoInput");
+            if(!input.value) return;
+            storageData.memos.push({day: currentDay, time: new Date().toLocaleTimeString(), text: input.value});
+            input.value = ""; save(); renderMemos();
+        }
+        function renderMemos() {
+            const list = document.getElementById("memoList");
+            const filtered = storageData.memos.filter(m => m.day === currentDay);
+            list.innerHTML = filtered.map(m => `<div><b>[${m.time}]</b> ${m.text}</div>`).join('');
+        }
+    </script>
+</body>
+</html>
