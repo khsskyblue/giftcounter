@@ -2,7 +2,7 @@
   "name": "AI 스마트 사은품 카운터",
   "short_name": "사은품카운터",
   "start_url": "./31.html",
-  "display": "standalone",
+  "display": "fullscreen",
   "background_color": "#FFB81C",
   "theme_color": "#FFB81C",
   "icons": [
