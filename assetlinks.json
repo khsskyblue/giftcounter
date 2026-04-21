@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.github.khsskyblue.pwa",
+        "sha256_cert_fingerprints": ["9F:06:84:43:B1:C7:F0:8A:0A:48:05:15:26:A4:5A:A3:F3:91:12:BC:16:2D:77:08:77:48:79:6D:20:9A:3E:84"]
+      }
+    }]
