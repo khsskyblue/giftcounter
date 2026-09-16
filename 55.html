@@ -10,6 +10,21 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <script>
+  // 브라우저가 서비스 워커를 지원하는지 확인
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      // 상대 경로로 sw.js 등록 (55.html과 같은 위치에 저장)
+      navigator.serviceWorker.register('./sw.js')
+        .then((registration) => {
+          console.log('서비스 워커 등록 성공! 범위:', registration.scope);
+        })
+        .catch((error) => {
+          console.error('서비스 워커 등록 실패:', error);
+        });
+    });
+  }
+</script>
     <style>
         :root { --emart-yellow: #FFB81C; --emart-dark: #231F20; --bg: #e0e0e0; --card-bg: #e0e0e0; --shadow1: #bebebe; --shadow2: #ffffff; --text: #333; --sub-text: #666; --accent: #ff4757; --success: #2ed573; --morning: #ff9f43; --afternoon: #5f27cd; }
         body.dark-mode { --bg: #222222; --card-bg: #222222; --shadow1: #151515; --shadow2: #2f2f2f; --text: #eeeeee; --sub-text: #aaaaaa; }
